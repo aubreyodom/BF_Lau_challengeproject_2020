@@ -1,0 +1,95 @@
+---
+title: "Challenge Project"
+author: "Aubrey Odom"
+date: "10/19/2020"
+output: pdf_document
+---
+```{R set up}
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(gridExtra)
+})
+
+```
+
+
+```{R read in data}
+# Files are generated from the 5' to 5' phasing scripts output of a text file
+# Both generated from the piRNA's of ovaries
+
+# AeAeg species mosquito
+aeg <- read.csv("AeAeg_Ovary_TC.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+
+# AeAlbo species
+albo <- read.csv("AeAlbo_Ovary_OA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+colnames(albo) <- c("Position", "Value")
+
+```
+
+```{R EDA}
+# Descriptive statistics
+albo_20 %>%
+  summarise(mean = mean(Value), median = median(Value), sd = sd(Value))
+
+aeg_20 %>%
+  summarise(mean = mean(Value), median = median(Value), sd = sd(Value))
+
+# Start at 20 and standardize
+aeg_20 <- aeg %>% 
+  as_tibble() %>%
+  filter(Position >= 20) %>%
+  mutate(scValue = scale(Value))
+
+albo_20 <- albo %>% 
+  as_tibble() %>%
+  filter(Position >= 20) %>%
+  mutate(scValue = scale(Value))
+
+# Plot
+
+p1 <- aeg_20 %>%
+  ggplot(aes(x = Position, y = scValue)) +
+  geom_line(col = "orange") +
+  labs(title = "Ovary 24-35 piRNAs 5'-to-5' Species phasing",
+       subtitle = "AeAeg Species Mosquito") +
+  ylab("Scaled Value")
+
+p2 <- albo_20 %>%
+  ggplot(aes(x = Position, y = scValue)) +
+  geom_line(col = "orange") +
+  labs(title = "Ovary 24-35 piRNAs 5'-to-5' Species phasing", 
+       subtitle = "AeAlbo Species Mosquito") +
+  ylab("Scaled Value")
+
+grid.arrange(p1, p2, nrow = 2)
+
+# Descriptive statistics
+aeg_20 %>%
+  summarise(mean = mean(scValue), median = median(scValue), sd = sd(scValue),
+            MSSD = psych::mssd(scValue),
+            RMSSD = psych::rmssd(scValue),
+            "lag-one autocor" = cor(scValue[-length(scValue)], scValue[-1]))
+
+albo_20 %>%
+  summarise(mean = mean(scValue), median = median(scValue), sd = sd(scValue),
+            MSSD = psych::mssd(scValue),
+            RMSSD = psych::rmssd(scValue),
+            "lag-one autocor" = cor(scValue[-length(scValue)], scValue[-1]))
+
+# Hurst Exponent
+pracma::hurstexp(aeg_20$scValue)
+pracma::hurstexp(albo_20$scValue)
+
+```
+
+
+```{R}
+# Testing
+x <- c(-1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1.0)
+y <- c(-1, 0.8, -0.6, 0.4, -0.2, 0, 0.2, -0.4, 0.6, -0.8, 1.0)
+sd(diff(x))
+sd(diff(y))
+
+sd(diff(x))/abs(mean(diff(x)))
+sd(diff(y))/abs(mean(diff(y)))
+```
