@@ -1,0 +1,98 @@
+---
+title: "Challenge Project"
+author: "Aubrey Odom"
+date: "10/19/2020"
+output: pdf_document
+---
+```{R set up}
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(gridExtra)
+  library(reshape2)
+})
+
+```
+
+
+```{R read in data}
+# Files are generated from the 5' to 5' phasing scripts output of a text file
+# Both generated from the piRNA's of ovaries
+
+# AeAeg species mosquito
+aeg_ov <- read.csv("../Data/AeAeg_Ovary_TC.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+aeg_fc <- read.csv("../Data/AeAeg_Fcarc_TC.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+colnames(aeg_fc) <- c("Position", "Value")
+
+# AnGam species
+gam_ov <- read.csv("../Data/AnGam_Ovary_TN.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+gam_fc <- read.csv("../Data/AnGam_Fcarc_TN.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+
+# CuQuin species
+qui_ov <- read.csv("../Data/CuQuin_Ovary_NL.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+qui_fc <- read.csv("../Data/CuQuin_Fcarc_NL.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+
+# AeAlbo species
+alb_ov <- read.csv("../Data/AeAlbo_Ovary_OA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+alb_fc <- read.csv("../Data/AeAlbo_Fcarc_OA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+colnames(alb_ov) <- c("Position", "Value")
+
+# Combine data
+  # Potential problem: filtered after scaling
+ov_std <- tibble(Position = aeg_ov$Position, aeg = (aeg_ov$Value),
+                 gam = (gam_ov$Value),
+                 qui = (qui_ov$Value),
+                 alb = (alb_ov$Value)) %>%
+  filter(Position >= 20) %>%
+  mutate(aeg = scale(aeg), gam = scale(gam),
+         qui = scale(qui), alb = scale(alb)) %>%
+  reshape2::melt(id = "Position", variable.name = "Species", value.name = "Value")
+
+fc_std <- tibble(Position = aeg_fc$Position, aeg = (aeg_fc$Value),
+                 gam = (gam_fc$Value),
+                 qui = (qui_fc$Value),
+                 alb = (alb_fc$Value)) %>%
+  filter(Position >= 20) %>%
+  mutate(aeg = scale(aeg), gam = scale(gam),
+         qui = scale(qui), alb = scale(alb)) %>%
+  reshape2::melt(id = "Position", variable.name = "Species", value.name = "Value")
+
+  
+```
+
+```{R EDA}
+# Descriptive statistics
+ov_std %>%
+  group_by(Species) %>%
+    summarise(mean = mean(Value), median = median(Value), sd = sd(Value),
+            MSSD = round(psych::mssd(Value), 5),
+            RMSSD = round(psych::rmssd(Value), 4),
+            "lag-one autocor" = cor(Value[-length(Value)], Value[-1]),
+              Hurst = pracma::hurstexp(Value, display = FALSE)$Hrs)
+
+fc_std %>%
+  group_by(Species) %>%
+    summarise(mean = mean(Value), median = median(Value), sd = sd(Value),
+              MSSD = round(psych::mssd(Value), 4),
+              RMSSD = round(psych::rmssd(Value), 4),
+              "lag-one autocor" = cor(Value[-length(Value)], Value[-1]),
+              Hurst = pracma::hurstexp(Value, display = FALSE)$Hrs)
+
+# Plot
+p1 <- ov_std %>%
+  ggplot(aes(x = Position, y = Value, col = Species)) +
+  geom_line() +
+  labs(title = "Ovary 24-35 piRNAs 5'-to-5' Species phasing",
+       subtitle = "AeAeg, AnGam, CuQuin, AeAlbo") +
+  ylab("Scaled Value")
+
+p2 <- fc_std %>%
+  ggplot(aes(x = Position, y = Value, col = Species)) +
+  geom_line() +
+  labs(title = "Female Carcass 24-35 piRNAs 5'-to-5' Species phasing",
+       subtitle = "AeAeg, AnGam, CuQuin, AeAlbo") +
+  ylab("Scaled Value")
+
+grid.arrange(p1, p2, nrow = 2)
+
+```
+
