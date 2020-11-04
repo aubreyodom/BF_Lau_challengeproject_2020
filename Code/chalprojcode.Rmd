@@ -10,7 +10,6 @@ suppressPackageStartupMessages({
   library(gridExtra)
   library(reshape2)
 })
-
 ```
 
 
@@ -56,7 +55,8 @@ fc_std <- tibble(Position = aeg_fc$Position, aeg = (aeg_fc$Value),
          qui = scale(qui), alb = scale(alb)) %>%
   reshape2::melt(id = "Position", variable.name = "Species", value.name = "Value")
 
-  
+write.csv(ov_std, "../Data/ovary_scaled.csv")
+write.csv(fc_std, "../Data/femcarcass_scaled.csv")
 ```
 
 ```{R EDA}
@@ -94,5 +94,52 @@ p2 <- fc_std %>%
 
 grid.arrange(p1, p2, nrow = 2)
 
+```
+
+```{R}
+# Fourier transform to uncover period
+  # Species: aeg gam qui alb
+create_plot <- function(df, wh_species, st, col) {
+  df %>%
+  filter(Species == wh_species) %>%
+  mutate(ft = fft(Value)) %>%
+  ggplot(aes(x = seq_along(Position), ymax = Mod(ft), ymin = 0)) +
+  geom_linerange(col = col) +
+  #geom_vline(mapping = 
+  #             aes(xintercept  = 
+  #                   seq_along(Position)[which.max(Mod(ft))[1]]),
+  #           col = "black", linetype = 2) +
+  xlab("Frequency (Hz)") +
+  ylab("Strength") +
+  ggtitle("Fourier Transform", subtitle = st)
+}
+
+allcol <- RColorBrewer::brewer.pal(n = 6, name = "Set2")
+
+# Ovary
+p1 <- create_plot(df = ov_std, "aeg", "Aedes Aegypti", allcol[1])
+p2 <- create_plot(df = ov_std, "gam", "Anopheles gambiae", 
+                  allcol[2])
+p3 <- create_plot(df = ov_std, "qui", 
+                  "Culex quinquefasciatus", allcol[3])
+p4 <- create_plot(df = ov_std, "alb", 
+                  "Aedes Albopictus", allcol[4])
+grid.arrange(p1, p2, p3, p4, ncol = 2)
+
+period_value <- function(df, wh_species){
+  df %>%
+  filter(Species == wh_species) %>%
+  mutate(ft = fft(Value)) %>%
+  summarise(period = seq_along(ft) - 1,
+            Mod_FourierT = Mod(ft)) %>%
+  filter(period < max(period)/2) %>%
+  arrange(desc(Mod_FourierT)) %>%
+  slice_head(n = 10)
+}
+
+period_value(df = ov_std, "aeg")
+period_value(df = ov_std, "gam")
+period_value(df = ov_std, "qui")
+period_value(df = ov_std, "alb")
 ```
 
