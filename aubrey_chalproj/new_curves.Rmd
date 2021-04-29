@@ -1,0 +1,197 @@
+---
+title: "Script for New Curves"
+author: "Aubrey Odom"
+date: "3/4/2021"
+output: html_document
+---
+
+```{r setup}
+# #devtools::install_github("vqv/ggbiplot")
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(gridExtra)
+  library(reshape2)
+  library(data.table)
+  library(ggbiplot)
+})
+```
+
+# Make list of bad files
+These files had NaN's, or were empty files, or had too many columns.
+```{r bad files}
+temp <- c("/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2smallRNA_ZikaPR_rep2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AaAeg_whole_SINV_NtfCtrl.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_lo_8dpf_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv" ,
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D14.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D14.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/Dmel_WRR1Lau2018_sRNA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D7.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D7.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2_eGFP_IP_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2_Piwi4_IP1_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2_Piwi4_IP2_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_injDV_2dpi_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_undet_4dpf_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAlbo_C6-36_WNV_GP.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAlbo_U4.4_WNV_GP.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+```
+
+
+# Read in curves (NEW)
+```{r read in curves new}
+all_files  <- list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj",
+                         pattern = "*SPECIES.csv", all.files = FALSE,
+                         full.names = TRUE, recursive = TRUE,
+                         ignore.case = FALSE, 
+                         include.dirs = TRUE, no.. = FALSE)
+
+# Remove bad files (previous chunk)
+all_files <- all_files[-which(all_files %in% temp)]
+
+# Get names
+get_split1 <- sapply(strsplit(all_files, split = "/"), function(x) x[[8]])
+species_name <- sapply(strsplit(get_split1, "_"), function(x) paste(x[[1]], 
+                                                                  sep = "_"))
+descriptor <- sapply(strsplit(get_split1, "_"), function(x) paste(x[[2]], x[[3]], 
+                                                                  sep = "_"))
+
+readme <- function(filename) {
+  read_delim(filename, delim = "\t",
+             col_names = c("Position", "Value"),
+             skip = 1, 
+             col_types = cols(
+               Position = col_double(),
+               Value = col_double()),
+             n_max = 400) %>%
+    filter(Position >= 20) %>%
+    summarise(Position, Value = scale(Value)[, 1]) %>%
+    as.data.frame()
+}
+
+# Read in all files as a list of dataframes
+list_allfiles_readme <- lapply(all_files, readme)
+# sapply(list_allfiles_readme, dim) # check that all are equal
+
+# Consolidate dataframes
+position <- seq(20, 199)
+all_curve_vals <- as.data.frame(matrix(sapply(list_allfiles_readme,
+                                              function(x) as.vector(x[, 2])),
+                                       nrow = nrow(list_allfiles_readme[[1]]),
+                                ncol = length(all_files),
+                                dimnames = list(c(), all_files)))
+
+# Randomly sample to create a new curve
+n_curves <- 1000
+random_curve <- apply(all_curve_vals, 1,
+                      function(x) sample(x, size = n_curves, replace = TRUE))
+plot_func1 <- function(x) {
+  rand_savgol <- sample(size = 1, x = seq(3, 45, by = 2))
+  p1 <- tibble(Position = seq(20, 199), Value = random_curve[x, ]) %>%
+  mutate(Smooth = pracma::savgol(Value, rand_savgol))
+   p1 %>%
+      mutate(Value = Smooth) %>%
+      select(Position, Value) %>%
+    write.csv(paste("randomgencurves/curve_", x, ".csv", sep = ""),
+              row.names = FALSE)
+    qplot(p1$Position, p1$Smooth, geom = "line") + 
+      labs(title = "Randomly Generated Phasing Curve",
+             subtitle = paste("Curve # =", x, "Savgol Smoothing Amt =",
+                              rand_savgol),
+             x = "Position", y = "Value")
+}
+
+all_plots <- sapply(seq_len(n_curves), plot_func1, simplify = FALSE)
+# all_plots # PLot all plots
+
+```
+
+```{r pca analysis}
+
+# Use this tutorial 
+  # https://www.datacamp.com/community/tutorials/pca-analysis-r
+
+# We will treat each column as a variable (positions 180 to 200)
+pca_mat_in <- t(all_curve_vals)
+colnames(pca_mat_in) <- paste("Position", 20:199)
+# curves_pca <- prcomp(pca_mat_in, center = TRUE, scale = TRUE)
+curves_pca <- prcomp(pca_mat_in, center = FALSE, scale = FALSE)
+summary(curves_pca)
+str(curves_pca)
+  # looks like the first component explains 74% of the variance
+  # The first two together explain 79%
+  # Would need 12 components to explain 90% of the variance - not ideal
+
+# Plotting
+  # Axes are seen as arrows originating from the center point
+png(filename = "pca_plot.png", width = 5, height = 5,
+    units = "in", res = 300)
+ggbiplot(curves_pca)
+dev.off()
+
+# This might be an interesting visualization once we assign them scores
+  # Then we can actually put them into groups
+
+```
+
+# Downsampling plotting
+```{R}
+# Downsampling: help with the creation of curves for machine learning training
+# How do the curves look?
+
+# read me for all files located in 
+# /projectnb/lau-bumc/BFstudents/data/downsample_phasing/downsampled_results
+all_files  <- c(list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/downsampling",
+                           pattern = "*.csv", all.files = FALSE,
+                           full.names = TRUE, recursive = TRUE,
+                           ignore.case = FALSE, 
+                           include.dirs = TRUE, no.. = FALSE))
+
+all_files_desc  <- c(list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/downsampling",
+                           pattern = "*.csv", all.files = FALSE,
+                           full.names = FALSE, recursive = TRUE,
+                           ignore.case = FALSE, 
+                           include.dirs = TRUE, no.. = FALSE))
+
+
+# Get descriptions of files for plotting titles
+species_name <- sapply(strsplit(all_files_desc, "_"), function(x) paste(x[[1]], 
+                                                                  sep = "_"))
+descriptor <- sapply(strsplit(all_files_desc, "_"), function(x) paste(x[[2]], x[[3]], 
+                                                                  sep = "_"))
+num_downsampling <- as.numeric(sapply(strsplit(all_files_desc, "_"),
+                                      function(x) strsplit(x[[5]], "*.24")[[1]]))
+
+# Read in the files
+readme <- function(filename) {
+  read_csv(filename,
+             col_names = c("Position", "Value"),
+             skip = 1, 
+             col_types = cols(
+               Position = col_double(),
+               Value = col_double()),
+             n_max = 400) %>%
+    filter(Position >= 20) %>%
+    summarise(Position, Value = scale(Value)[, 1]) %>%
+    as.data.frame()
+}
+
+# function to plot
+temp_func <- function(x) {
+  p1 <- readme(all_files[x]) %>%
+  mutate(Species = species_name[x],
+         descriptor = descriptor[x],
+         ds = paste("Downsampling:", num_downsampling[x], "million"))
+    qplot(p1$Position, p1$Value, geom = "line") + 
+      labs(title = "Phasing Curve",
+           subtitle = paste(p1$Species, p1$descriptor, p1$ds),
+           x = "Position", y = "Value")
+}
+
+all_plots <- sapply(order(num_downsampling), temp_func, simplify = FALSE)
+all_plots
+# Will need to read in differently for the non .xls.csv files
+
+
+```

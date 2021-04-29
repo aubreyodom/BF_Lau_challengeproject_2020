@@ -1,0 +1,328 @@
+---
+title: "Challenge Project"
+author: "Aubrey Odom"
+date: "11/9/2020"
+output: pdf_document
+---
+
+```{R}
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(gridExtra)
+  library(reshape2)
+})
+```
+
+```{R}
+temp <- c("/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2smallRNA_ZikaPR_rep2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AaAeg_whole_SINV_NtfCtrl.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_lo_8dpf_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv" ,
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D14.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D14.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/Dmel_WRR1Lau2018_sRNA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D7.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D7.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2_eGFP_IP_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2_Piwi4_IP1_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2_Piwi4_IP2_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_injDV_2dpi_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_undet_4dpf_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAlbo_C6-36_WNV_GP.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAlbo_U4.4_WNV_GP.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+# Write these weird curves into a csv
+get_split1 <- sapply(strsplit(temp, split = "/"), function(x) x[[8]])
+write.csv(get_split1, "BadPhasingCurves.csv")
+```
+
+## Read in data
+```{R}
+all_files  <- list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj",
+                         pattern = "*SPECIES.csv", all.files = FALSE,
+                         full.names = TRUE, recursive = TRUE,
+                         ignore.case = FALSE, 
+                         include.dirs = TRUE, no.. = FALSE)
+
+all_files <- all_files[-which(all_files %in% temp)]
+
+# Get names
+get_split1 <- sapply(strsplit(all_files, split = "/"), function(x) x[[8]])
+species_name <- sapply(strsplit(get_split1, "_"), function(x) paste(x[[1]], 
+                                                                  sep = "_"))
+descriptor <- sapply(strsplit(get_split1, "_"), function(x) paste(x[[2]], x[[3]], 
+                                                                  sep = "_"))
+
+readme <- function(filename) {
+  read_delim(filename, delim = "\t",
+             col_names = c("Position", "Value"),
+             skip = 1, 
+             col_types = cols(
+               Position = col_double(),
+               Value = col_double()),
+             n_max = 400) %>%
+    filter(Position >= 20) %>%
+    summarise(Position, Value = scale(Value)[, 1])
+}
+```
+
+
+## Look at curve statistics
+```{R}
+summarise_curves <- function (filename) {
+  output <- readme(filename) %>%
+    summarise(mean = mean(Value), median = median(Value), sd = sd(Value),
+            MSSD = round(psych::mssd(Value), 5),
+            RMSSD = round(psych::rmssd(Value), 4),
+            "lag-one autocor" = cor(Value[-length(Value)], Value[-1]))
+  return(as.matrix(output))
+}
+
+# Get results into manipulable format
+curve_stats <- sapply(all_files, function(x) as.matrix(summarise_curves(x)))
+fixed_curve_stats <- curve_stats %>%
+  as.data.frame %>%
+  t %>%
+  as_tibble %>%
+  mutate("Species Names" = species_name,
+         "Descriptor" = descriptor)
+colnames(fixed_curve_stats)[1:6] <- c("mean", "median", "sd", "MSSD", "RMSSD", "lag-one autocor")   
+
+# Sort by some statistic
+comp_stat <- 7
+best_out <- order(fixed_curve_stats[, comp_stat], decreasing = TRUE)
+
+# Plotting function
+temp_func <- function(x) {
+  p1 <- readme(all_files[x]) %>%
+  mutate(Species = species_name[x],
+         descriptor = descriptor[x])
+    qplot(p1$Position, p1$Value, geom = "line") + 
+      labs(title = "Phasing Curve",
+             subtitle = paste(p1$Species, p1$descriptor, "Comparative Stat is",
+                              fixed_curve_stats[x, comp_stat]),
+             x = "Position", y = "Value")
+}
+
+all_plots <- sapply(best_out, temp_func, simplify = FALSE)
+all_plots
+```
+
+## Extract number of peaks and plot within npeaks subsets, ranked by a statistic
+
+```{R}
+# Reads in file
+get_curve <- function(i) {
+  this_curve <- readme(all_files[i]) %>%
+    mutate(Smooth = pracma::savgol(Value, 25)) %>%
+    reshape2::melt(id.vars = "Position",
+                   measure.vars = c("Value", "Smooth"),
+                   variable.name = "Type")
+}
+
+get_peaks <- function(i) {
+  this_curve <- get_curve(i) %>%
+    filter(Type == "Smooth")
+  peaks <- pracma::findpeaks(x = this_curve$value, nups = 3,
+                             ndowns = 3)
+  peaks[, 2:4] <- peaks[, 2:4] + this_curve$Position[1] - 1
+  colnames(peaks) <- c("Value", "Position", "V1", "V2")
+  return(peaks)
+}
+
+plot_peaks <- function(i) {
+  peaks <- get_peaks(i)
+  this_curve <- get_curve(i)
+  plot(this_curve$Position[this_curve$Type == "Value"],
+       this_curve$value[this_curve$Type == "Value"],
+       type = "l",
+       #main = "Extracted Peaks of Smoothed Curve",
+       main = paste(species_name[i], descriptor[i]),
+       xlab = "Position",
+       ylab = "Smoothed Value",
+       lwd = 1,
+       col = "grey19")
+  lines(this_curve$Position[this_curve$Type == "Smooth"],
+        this_curve$value[this_curve$Type == "Smooth"],
+        type = "l",
+        lwd = 2,
+        col = "black")
+  points(peaks[, 2], peaks[, 1], pch = 19, col = "red")
+  #abline(v = c(peaks[, 3]), col = "red")
+  #abline(v = c(peaks[, 4]), col = "yellow")
+}
+
+# How many curves have a certain # of peaks
+table(all_peaks)
+
+# Plot all peaks with a certain # of peaks (or all)
+which(all_peaks >= 1) %>%
+  sapply(plot_peaks, simplify = FALSE)
+
+# How many peaks?
+all_peaks <- sapply(seq_along(all_files), 
+                    function(x) nrow(get_peaks(x)))
+all_peaks_f <- as.factor(all_peaks)
+all_files_by_npeaks <- split(x = all_files, all_peaks_f)
+
+# Now compare with statistics, by number of peaks
+  # n_peaks is an integer, number of peaks to subset by
+  # comp_stat_char is a character string with comp statistic
+rank_by_stat_plot <- function(n_peaks, comp_stat_char) {
+  this_one <- which(names(all_files_by_npeaks) == as.character(n_peaks))
+  select_files <- which(all_files %in% all_files_by_npeaks[[this_one]])
+  curve_stats <- sapply(all_files_by_npeaks[[this_one]],
+                        function(x) as.matrix(summarise_curves(x)))
+  fixed_curve_stats <- curve_stats %>%
+    as.data.frame %>%
+    t %>%
+    as_tibble %>%
+    mutate("Species Names" = species_name[select_files],
+           "Descriptor" = descriptor[select_files])
+  all_stats <- c("mean", "median", "sd", "MSSD", "RMSSD", 
+                                        "lag-one autocor", "Hurst") 
+  colnames(fixed_curve_stats)[1:7] <- all_stats
+
+  # Sort by some statistic
+  comp_stat <- which(all_stats == comp_stat_char)
+  best_out <- order(fixed_curve_stats[, comp_stat], decreasing = TRUE)
+
+  # Plotting function
+  temp_func <- function(x) {
+    p1 <- readme(all_files_by_npeaks[[this_one]][x]) %>%
+    mutate(Species = species_name[x],
+           descriptor = descriptor[x])
+      qplot(p1$Position, p1$Value, geom = "line") + 
+        labs(title = "Phasing Curve",
+               subtitle = paste(p1$Species, p1$descriptor, "Comparative Stat is",
+                                comp_stat_char, "=",
+                                fixed_curve_stats[x, comp_stat]),
+               x = "Position", y = "Value")
+  }
+  all_plots <- sapply(best_out, temp_func, simplify = FALSE)
+  return(all_plots)
+}
+
+# For options of comp_stat_char:
+  #"mean", "median", "sd", "MSSD", "RMSSD", "lag-one autocor", "Hurst"
+rank_by_stat_plot(6, "RMSSD")
+```
+
+## Plot all curves (only) for ranking
+```{R}
+plot_raw <- function(x) {
+   p1 <- readme(all_files[x]) %>%
+    mutate(Species = species_name[x],
+          descriptor = descriptor[x])
+  qplot(p1$Position, p1$Value, geom = "line") + 
+        labs(title = "5' to 5' Phasing Curve",
+             subtitle = paste(p1$Species, p1$descriptor),
+             x = "Position", y = "Value")
+}
+
+plot_list <- sapply(seq_along(all_files), plot_raw, simplify = FALSE)
+
+for (x in seq_along(all_files)) {
+  png(filename = paste(paste("rawdata_plots/plot", x, species_name[x], sep = "_"),
+                       "png", sep = "."),
+      width = 6, height = 4, units = "in", res = 480)
+    print(plot_list[x])
+    dev.off()
+}
+
+```
+
+### Nonparametric Testing
+```{R}
+curvescores <- read_csv("CurveScores 12.7.20 Nate.csv",
+                        col_types = cols(
+                          Filenames = col_character(),
+                          Scores = col_double(),
+                          `Qualitative Rank` = col_double()
+                          )) %>%
+  mutate(algscore = order(curvescores$Scores, decreasing = TRUE),
+         eyescore = `Qualitative Rank`)
+
+wilcox.test(curvescores$algscore, curvescores$eyescore,
+            paired = TRUE, alternative = "two.sided")
+
+# Compute nonparametric test with 8 groupings
+ncuts <- 8
+
+cut2(curvescores$Scores, breaks = 8, ordered_result = TRUE, labels = seq_len(ncuts))
+
+curvescores_split_8 <- curvescores %>%
+  mutate(Scores_cut = as.numeric(cut_number(Scores, 8)), Rank_cut = as.numeric(cut_number(`Qualitative Rank`, 8)))
+
+curvescores_split_8 %>% select(Scores_cut, Rank_cut)
+
+wilcox.test(curvescores_split_8$Scores_cut, curvescores_split_8$Rank_cut,
+            paired = TRUE, alternative = "two.sided")
+
+```
+
+
+```{R}
+for (x in 1) {
+  readme(all_files[x])
+}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

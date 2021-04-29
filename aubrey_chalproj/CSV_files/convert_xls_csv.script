@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#for i in $(find /projectnb/lau-bumc/BFstudents/data -name '*.xls') # For the OG files
+for i in $(find /projectnb/lau-bumc/BFstudents/data/downsample_phasing/downsampled_results -name '*.xls')
+	do
+	s=${i##*/}
+	s=${s%.*}
+	cp $i /projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/downsampling/$s.xls
+	soffice --headless --convert-to csv $s.xls --outdir /projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/downsampling
+	rm -rf $s.xls
+done
+

@@ -1,0 +1,157 @@
+---
+title: "Multiple Linear Regression"
+author: "Aubrey Odom"
+date: "1/26/2021"
+output: pdf_document
+---
+
+```{r setup}
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(gridExtra)
+  library(reshape2)
+})
+```
+
+```{r file readme}
+# List of files
+  # WITH directory info
+all_files  <- list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files",
+                         pattern = "*SPECIES.csv", all.files = FALSE,
+                         full.names = TRUE, recursive = TRUE,
+                         ignore.case = FALSE, 
+                         include.dirs = TRUE, no.. = FALSE)
+  # WITHOUT directory info! (for use later)
+all_files_nodir  <- list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files",
+                         pattern = "*SPECIES.csv", all.files = FALSE,
+                         full.names = FALSE, recursive = TRUE,
+                         ignore.case = FALSE, 
+                         include.dirs = TRUE, no.. = FALSE)
+
+# Get information from filenames
+get_split1 <- sapply(strsplit(all_files, split = "/"), function(x) x[[8]])
+species_name <- sapply(strsplit(get_split1, "_"), function(x) paste(x[[1]], 
+                                                                  sep = "_"))
+descriptor <- sapply(strsplit(get_split1, "_"), function(x) paste(x[[2]], x[[3]], 
+                                                                  sep = "_"))
+                     
+# Function for individually reading in files
+readme <- function(filename) {
+  read_delim(filename, delim = "\t",
+             col_names = c("Position", "Value"),
+             skip = 1, 
+             col_types = cols(
+               Position = col_double(),
+               Value = col_double()),
+             n_max = 400) %>%
+    filter(Position >= 20) %>%
+    summarise(Position, Value = scale(Value)[, 1])
+}
+```
+
+
+
+```{r MLR}
+# Nate's CSV file
+curvescores <- read_csv("CurveScores 12.7.20 Nate.csv",
+                        col_types = cols(
+                          Filenames = col_character(),
+                          Scores = col_double(),
+                          `Qualitative Rank` = col_double()
+                          ))
+
+# Neal's characteristics file
+corr_ea <- read_csv("Correlation2.csv",
+                    col_types = cols(Filename = col_character(),
+                                     `Ratio of Peaks Found` = col_double(),
+                                     `Ratio of Peaks to Ideal` = col_double(),
+                                     `Ratio of Range` = col_double(),
+                                     `Inverse Standard Deviation` = col_double(),
+                                     `Smoothing Error` = col_double(),
+                                     Rankings = col_double()))
+
+# Join the files to connect characterstics with assigned scores
+  # Remove .xls from corr_ea names and add "csv"
+corr_ea$Filename <- paste(unlist(strsplit(corr_ea$Filename, ".xls")), ".csv", sep = "")
+  # Add .csv for curvescores filenames
+curvescores$Filenames <- paste(curvescores$Filenames, ".csv", sep = "")
+  # Join the datasets
+all_curve_info <- left_join(corr_ea, curvescores, by = c("Filename" = "Filenames"),
+                            curvescores)
+  # Arrange them like the original files
+tmp <- all_files_nodir[all_files_nodir %in% all_curve_info$Filename]
+all_curve_info <- all_curve_info[order(match(all_curve_info$Filename, tmp)), ]
+# all(all_curve_info$Filename == tmp) # Check these are properly ordered!
+  # Subset vector of full filenames
+all_files <- all_files[all_files_nodir %in% all_curve_info$Filename]
+
+# Linear modeling -------------------------------------------------------------
+  # First attempt - only individual 
+lm1 <- lm(`Qualitative Rank` ~ `Ratio of Peaks Found` + 
+          `Ratio of Peaks to Ideal` +
+          `Ratio of Range` +
+          `Inverse Standard Deviation` +
+          `Smoothing Error`, data = all_curve_info)
+summary(lm1)
+anova(lm1)
+
+  # All possible interactions (overfitting)
+lm2 <- lm(`Qualitative Rank` ~ `Ratio of Peaks Found` * 
+          `Ratio of Peaks to Ideal` *
+          `Ratio of Range` *
+          `Inverse Standard Deviation` *
+          `Smoothing Error`, data = all_curve_info)
+summary(lm2)
+anova(lm2)
+
+  # Stepwise - because why not
+step.model <- MASS::stepAIC(lm2, direction = "both", 
+                      trace = FALSE)
+summary(step.model)
+
+# Plot LMs --------------------------------------------------------------------
+  # Function to rank by a particular lm
+order_curves_lm <- function(this_lm, 
+                            orignames = all_curve_info$Filename) {
+  fittedvals <- this_lm$fitted.values
+  rankings <- order(fv, decreasing = TRUE)
+  
+  # Function to plot indiv curves
+  species_name <- sapply(strsplit(orignames, "_"), function(j) paste(j[[1]],
+                                                                     sep = "_"))
+  descriptor <- sapply(strsplit(orignames, "_"), function(j) paste(j[[2]], j[[3]],
+                                                                   sep = "_"))
+  temp_func <- function(x) {
+    p1 <- readme(all_files[x]) %>%
+      mutate(Species = species_name[x],
+             descriptor = descriptor[x])
+    qplot(p1$Position, p1$Value, geom = "line") + 
+      labs(title = "Phasing Curve",
+           subtitle = paste(p1$Species, p1$descriptor, "Linear Model"),
+           x = "Position", y = "Value")
+    }
+  all_plots <- sapply(rankings, temp_func, simplify = FALSE)
+  return(all_plots)
+}
+
+
+
+```
+
+```{r lm simple}
+ order_curves_lm(this_lm = lm1)
+
+```
+
+```{r lm all interactions}
+order_curves_lm(this_lm = lm2)
+
+```
+
+```{r stepwise}
+order_curves_lm(this_lm = step.model)
+
+```
+
+
+
