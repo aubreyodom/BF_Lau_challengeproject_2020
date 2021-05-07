@@ -19,29 +19,29 @@ suppressPackageStartupMessages({
 # Make list of bad files
 These files had NaN's, or were empty files, or had too many columns.
 ```{r bad files}
-temp <- c("/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2smallRNA_ZikaPR_rep2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AaAeg_whole_SINV_NtfCtrl.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_lo_8dpf_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv" ,
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D14.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D14.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/Dmel_WRR1Lau2018_sRNA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D7.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D7.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2_eGFP_IP_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2_Piwi4_IP1_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Aag2_Piwi4_IP2_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_injDV_2dpi_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAeg_Whole_undet_4dpf_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAlbo_C6-36_WNV_GP.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
-          "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/AeAlbo_U4.4_WNV_GP.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
+temp <- c("/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Aag2smallRNA_ZikaPR_rep2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AaAeg_whole_SINV_NtfCtrl.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Whole_lo_8dpf_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv" ,
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D14.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D14.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D2.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/Dmel_WRR1Lau2018_sRNA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Whole_Mock_D7.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Whole_ZIKV_D7.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Aag2_eGFP_IP_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Aag2_Piwi4_IP1_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Aag2_Piwi4_IP2_RA.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Whole_injDV_2dpi_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAeg_Whole_undet_4dpf_JM.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAlbo_C6-36_WNV_GP.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv",
+          "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/AeAlbo_U4.4_WNV_GP.24_35.trim.fastq.uq.polyn.5to5_SPECIES.csv")
 ```
 
 
 # Read in curves (NEW)
 ```{r read in curves new}
-all_files  <- list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj",
+all_files  <- list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj",
                          pattern = "*SPECIES.csv", all.files = FALSE,
                          full.names = TRUE, recursive = TRUE,
                          ignore.case = FALSE, 
@@ -142,13 +142,13 @@ dev.off()
 
 # read me for all files located in 
 # /projectnb/lau-bumc/BFstudents/data/downsample_phasing/downsampled_results
-all_files  <- c(list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/downsampling",
+all_files  <- c(list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/downsampling",
                            pattern = "*.csv", all.files = FALSE,
                            full.names = TRUE, recursive = TRUE,
                            ignore.case = FALSE, 
                            include.dirs = TRUE, no.. = FALSE))
 
-all_files_desc  <- c(list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/aubrey_chalproj/CSV_files/downsampling",
+all_files_desc  <- c(list.files(path = "/projectnb/lau-bumc/BFstudents/scripts/BF_Lau_challengeproject_2020/aubrey_chalproj/CSV_files/downsampling",
                            pattern = "*.csv", all.files = FALSE,
                            full.names = FALSE, recursive = TRUE,
                            ignore.case = FALSE, 
@@ -183,7 +183,7 @@ temp_func <- function(x) {
   mutate(Species = species_name[x],
          descriptor = descriptor[x],
          ds = paste("Downsampling:", num_downsampling[x], "million"))
-    qplot(p1$Position, p1$Value, geom = "line") + 
+    qplot(p1$Position, p1$Value, geom = "line", ylim = c(-2.5, 5)) + 
       labs(title = "Phasing Curve",
            subtitle = paste(p1$Species, p1$descriptor, p1$ds),
            x = "Position", y = "Value")
