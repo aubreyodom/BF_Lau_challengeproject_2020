@@ -262,12 +262,7 @@ wilcox.test(curvescores_split_8$Scores_cut, curvescores_split_8$Rank_cut,
 ```
 
 
-```{R}
-for (x in 1) {
-  readme(all_files[x])
-}
 
-```
 
 
 
