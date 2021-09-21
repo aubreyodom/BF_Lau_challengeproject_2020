@@ -1,0 +1,16 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage[margin = 1in]{geometry}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{float}
+
+\begin{document}
+\noindent Each curve was smoothed using a Savitzky-Golay filter\\
+\\
+Let $numPeaks = $ the number of peaks found on the smoothed curve using the scipy find peaks function\\
+\\
+Returns $min(numPeaks/6, 6/numPeaks)$\\
+\\
+Goal is to distinguish smoother periodic curves from nosier curves
+\end{document}
